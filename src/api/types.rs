@@ -6,13 +6,20 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Gallery {
-    pub id: u32,
-    pub media_id: String,
+    pub id: Id,
+    pub media_id: Id,
     pub title: Title,
     pub images: Images,
     pub tags: Vec<Tag>,
     pub num_pages: u32,
     pub num_favorites: u32,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum Id {
+    Number(u32),
+    String(String),
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -83,6 +90,15 @@ impl Gallery {
                 .build()
                 .map_err(From::from)
         })
+    }
+}
+
+impl fmt::Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Number(num) => write!(f, "{num}"),
+            Self::String(s) => write!(f, "{s}"),
+        }
     }
 }
 
