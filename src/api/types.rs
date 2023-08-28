@@ -24,9 +24,9 @@ pub enum Id {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Title {
-    pub english: String,
-    pub japanese: String,
-    pub pretty: String,
+    pub english: Option<String>,
+    pub japanese: Option<String>,
+    pub pretty: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

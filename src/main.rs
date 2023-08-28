@@ -15,9 +15,24 @@ async fn main() -> Result<()> {
     let client = api::Client::new()?;
 
     let gallery = client.g(args.id).await?;
-    let output = args.output.unwrap_or(gallery.title.english.clone().into());
+    let output = match args.output {
+        Some(pb) => pb,
+        None => match gallery.title.english {
+            Some(ref tt) => tt.into(),
+            None => match gallery.title.japanese {
+                Some(ref tt) => tt.into(),
+                None => match gallery.title.pretty {
+                    Some(ref tt) => tt.into(),
+                    None => gallery.id.to_string().into(),
+                },
+            },
+        },
+    };
 
-    fs::create_dir(&output).await?;
+    let output = match fs::create_dir(&output).await {
+        Ok(()) => output,
+        Err(_) => gallery.id.to_string().into(),
+    };
     for url in gallery.page_urls() {
         let url = url?;
         info!("downloading {url}");
