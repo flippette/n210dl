@@ -29,9 +29,12 @@ async fn main() -> Result<()> {
         },
     };
 
-    let output = match fs::create_dir(&output).await {
-        Ok(()) => output,
-        Err(_) => gallery.id.to_string().into(),
+    let output = if let Ok(()) = fs::create_dir(&output).await {
+        output
+    } else {
+        let tmp = gallery.id.to_string().into();
+        fs::create_dir(&tmp).await?;
+        tmp
     };
     for url in gallery.page_urls() {
         let url = url?;
