@@ -67,7 +67,7 @@ async fn main() -> Result<()> {
 #[derive(Debug, Parser, Clone)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    #[arg(short, long)]
+    #[arg(short, long, num_args = 1.., value_delimiter = ',')]
     ids: Vec<u32>,
 
     #[arg(short, long)]
