@@ -1,8 +1,7 @@
-use std::fmt;
-
 use eyre::Result;
 use http::Uri;
 use serde::Deserialize;
+use std::fmt;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Gallery {

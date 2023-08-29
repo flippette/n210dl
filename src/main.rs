@@ -14,44 +14,51 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     let client = api::Client::new()?;
 
-    let gallery = client.g(args.id).await?;
-    let output = match args.output {
-        Some(pb) => pb,
-        None => match gallery.title.english {
-            Some(ref tt) => tt.into(),
-            None => match gallery.title.japanese {
-                Some(ref tt) => tt.into(),
-                None => match gallery.title.pretty {
-                    Some(ref tt) => tt.into(),
-                    None => gallery.id.to_string().into(),
-                },
-            },
-        },
-    };
-
-    let output = if let Ok(()) = fs::create_dir(&output).await {
-        output
+    let outdir = if let Some(pb) = &args.output {
+        pb.clone()
     } else {
-        let tmp = gallery.id.to_string().into();
-        fs::create_dir(&tmp).await?;
-        tmp
+        std::env::current_dir()?
     };
-    for url in gallery.page_urls() {
-        let url = url?;
-        info!("downloading {url}");
-        let img = client.i(&url).await?;
+    fs::create_dir_all(&outdir).await?;
 
-        let mut path = output.clone();
-        path.push(
-            url.into_parts()
-                .path_and_query
-                .expect("valid path")
-                .path()
-                .split('/')
-                .last()
-                .expect("file name"),
-        );
-        fs::write(path, img).await?;
+    for id in &args.ids {
+        let gallery = client.g(*id).await?;
+        let mut outdir = outdir.clone();
+
+        if let Some(tt) = gallery
+            .title
+            .english
+            .as_deref()
+            .or(gallery.title.japanese.as_deref())
+            .or(gallery.title.pretty.as_deref())
+        {
+            info!("downloading {tt}!");
+            outdir.push(
+                tt.replace(['/', '\\', '|', '<', '>', ':', '"', '?', '*'], " "),
+            );
+        } else {
+            info!("downloading {id}!");
+            outdir.push(id.to_string());
+        }
+
+        fs::create_dir_all(&outdir).await?;
+
+        for (i, url) in gallery.page_urls().enumerate() {
+            let url = url?;
+            info!("{id}: {} / {}", i + 1, gallery.num_pages);
+            let mut path = outdir.clone();
+            path.push(
+                url.path_and_query()
+                    .expect("valid path")
+                    .path()
+                    .split('/')
+                    .last()
+                    .expect("file name"),
+            );
+
+            let img = client.i(&url).await?;
+            fs::write(path, img).await?;
+        }
     }
 
     Ok(())
@@ -61,7 +68,7 @@ async fn main() -> Result<()> {
 #[clap(author, version, about, long_about = None)]
 struct Args {
     #[arg(short, long)]
-    id: u32,
+    ids: Vec<u32>,
 
     #[arg(short, long)]
     output: Option<PathBuf>,

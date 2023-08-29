@@ -1,6 +1,6 @@
-use eyre::Result;
-
 mod types;
+
+use eyre::Result;
 use http::Uri;
 pub use types::*;
 
