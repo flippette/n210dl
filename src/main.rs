@@ -2,27 +2,25 @@ mod api;
 
 use clap::Parser;
 use eyre::Result;
-use std::path::PathBuf;
-use tokio::fs;
+use std::{fs, path::PathBuf};
 use tracing::info;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     color_eyre::install()?;
     tracing_subscriber::fmt().compact().init();
 
     let args = Args::parse();
-    let client = api::Client::new()?;
+    let client = api::Client::new();
 
     let outdir = if let Some(pb) = &args.output {
         pb.clone()
     } else {
         std::env::current_dir()?
     };
-    fs::create_dir_all(&outdir).await?;
+    fs::create_dir_all(&outdir)?;
 
     for id in &args.ids {
-        let gallery = client.g(*id).await?;
+        let gallery = client.g(*id)?;
         let mut outdir = outdir.clone();
 
         if let Some(tt) = gallery
@@ -41,7 +39,7 @@ async fn main() -> Result<()> {
             outdir.push(id.to_string());
         }
 
-        fs::create_dir_all(&outdir).await?;
+        fs::create_dir_all(&outdir)?;
 
         for (i, url) in gallery.page_urls().enumerate() {
             let url = url?;
@@ -56,8 +54,8 @@ async fn main() -> Result<()> {
                     .expect("file name"),
             );
 
-            let img = client.i(&url).await?;
-            fs::write(path, img).await?;
+            let img = client.i(&url)?;
+            fs::write(path, img)?;
         }
     }
 
