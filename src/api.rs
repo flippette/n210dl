@@ -3,6 +3,7 @@ mod types;
 use eyre::Result;
 use http::Uri;
 pub use types::*;
+use ureq::Agent;
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -10,18 +11,6 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new() -> Self {
-        Self {
-            inner: ureq::AgentBuilder::new()
-                .user_agent(&format!(
-                    "{}/{}",
-                    env!("CARGO_PKG_NAME"),
-                    env!("CARGO_PKG_VERSION")
-                ))
-                .build(),
-        }
-    }
-
     pub fn g(&self, id: u32) -> Result<Gallery> {
         let res = self
             .inner
@@ -47,5 +36,11 @@ impl Client {
             .read_to_end(&mut buf)?;
 
         Ok(buf)
+    }
+}
+
+impl From<Agent> for Client {
+    fn from(agent: Agent) -> Self {
+        Self { inner: agent }
     }
 }

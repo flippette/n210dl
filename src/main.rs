@@ -2,15 +2,26 @@ mod api;
 
 use clap::Parser;
 use eyre::Result;
+use http::Uri;
 use std::{fs, path::PathBuf};
 use tracing::info;
+use ureq::{AgentBuilder, Proxy};
 
 fn main() -> Result<()> {
     color_eyre::install()?;
     tracing_subscriber::fmt().compact().init();
 
     let args = Args::parse();
-    let client = api::Client::new();
+    let mut builder = AgentBuilder::new();
+    builder = builder.user_agent(concat!(
+        env!("CARGO_PKG_NAME"),
+        '/',
+        env!("CARGO_PKG_VERSION")
+    ));
+    if let Some(proxy) = args.proxy {
+        builder = builder.proxy(Proxy::new(proxy.to_string())?);
+    }
+    let client = api::Client::from(builder.build());
 
     let outdir = if let Some(pb) = &args.output {
         pb.clone()
@@ -31,9 +42,7 @@ fn main() -> Result<()> {
             .or(gallery.title.pretty.as_deref())
         {
             info!("downloading {tt}!");
-            outdir.push(
-                tt.replace(['/', '\\', '|', '<', '>', ':', '"', '?', '*'], " "),
-            );
+            outdir.push(tt.replace(['/', '\\', '|', '<', '>', ':', '"', '?', '*'], " "));
         } else {
             info!("downloading {id}!");
             outdir.push(id.to_string());
@@ -70,4 +79,7 @@ struct Args {
 
     #[arg(short, long)]
     output: Option<PathBuf>,
+
+    #[arg(short, long)]
+    proxy: Option<Uri>,
 }
